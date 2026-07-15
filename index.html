@@ -106,7 +106,7 @@ h1,h2,h3{margin:0; font-family:var(--sans);}
 .card:nth-of-type(5){animation-delay:.12s;}
 @keyframes cardIn{ from{opacity:0; transform:translateY(6px);} to{opacity:1; transform:translateY(0);} }
 @media (prefers-reduced-motion: reduce){
-  .card, .view, .check-btn.pop, .rpe-dot.on, .navbar button.active .ic, .card.today::after{ animation:none !important; }
+  .card, .view, .check-btn.pop, .navbar button.active .ic, .card.today::after{ animation:none !important; }
 }
 .card.done{ border-left:3px solid var(--success); }
 .card.today{ border-left:3px solid var(--accent); }
@@ -160,15 +160,30 @@ h1,h2,h3{margin:0; font-family:var(--sans);}
 .check-btn.pop{ animation: popScale .38s var(--ease); }
 @keyframes popScale{ 0%{transform:scale(1);} 45%{transform:scale(1.25);} 100%{transform:scale(1);} }
 
-/* ===== RPE dial ===== */
-.rpe-row{display:flex; gap:4px; margin-top:8px;}
-.rpe-dot{
-  flex:1; height:24px; min-width:0; border:1px solid var(--line); background:#fff; border-radius:5px;
-  font-size:9px; font-family:var(--mono); font-weight:700; color:var(--ink-soft);
-  display:flex; align-items:center; justify-content:center; transition:all .15s var(--ease); padding:0;
+/* ===== RPE : barre glissante ===== */
+.rpe-label{
+  font-size:10px; color:var(--ink-soft); text-transform:uppercase; letter-spacing:.05em;
+  margin-top:8px; font-weight:600; display:flex; align-items:center; gap:8px;
 }
-.rpe-dot.on{background:var(--accent); border-color:var(--accent); color:#fff; transform:scale(1.05); animation: popScale .32s var(--ease);}
-.rpe-label{font-size:10px; color:var(--ink-soft); text-transform:uppercase; letter-spacing:.05em; margin-top:8px; font-weight:600;}
+.rpe-value-badge{
+  font-family:var(--mono); font-size:12px; font-weight:800; color:var(--accent-dark);
+  background:var(--accent-tint); padding:2px 8px; border-radius:10px; letter-spacing:0; text-transform:none;
+}
+.rpe-slider{
+  -webkit-appearance:none; appearance:none; width:100%; height:6px; border-radius:4px;
+  background:var(--line-soft); margin-top:8px; outline:none;
+}
+.rpe-slider::-webkit-slider-thumb{
+  -webkit-appearance:none; appearance:none; width:24px; height:24px; border-radius:50%;
+  background:var(--ink-soft); border:3px solid #fff; box-shadow:0 1px 4px rgba(0,0,0,0.25); cursor:pointer;
+  transition:background .15s var(--ease);
+}
+.rpe-slider.touched::-webkit-slider-thumb{ background:var(--accent); }
+.rpe-slider::-moz-range-thumb{
+  width:24px; height:24px; border-radius:50%; background:var(--ink-soft); border:3px solid #fff;
+  box-shadow:0 1px 4px rgba(0,0,0,0.25); cursor:pointer;
+}
+.rpe-slider.touched::-moz-range-thumb{ background:var(--accent); }
 
 /* ===== Buttons ===== */
 .btn{
@@ -393,6 +408,7 @@ textarea{min-height:64px; resize:vertical;}
 </div>
 
 <script>
+
 // ============================================================
 // DONNÉES SEED — extraites du programme Word original
 // Ce fichier n'est utilisé que la première fois (si aucune donnée
@@ -675,8 +691,10 @@ const MUSCLE_LABELS = {
 // Zones visibles sur la silhouette de face (les autres restent suivies mais listées sous le schéma)
 const MUSCLE_ON_DIAGRAM = ["cou","epaules","poitrine","bras","avant_bras","abdos","jambes","mollets"];
 
+
 </script>
 <script>
+
 // ============================================================
 // APP — Carnet Prépa Combat
 // Stockage 100% local sur le téléphone (localStorage).
@@ -1504,7 +1522,7 @@ function formatKcalText(kcalObj){
 function renderProgramCard(prog, dateISO, withLog, log, progKey){
   const met = prog.met || 5;
   const weightKg = getWeightKg();
-  const canReorder = withLog && dateISO && log && !log.locked;
+  const canReorder = withLog && dateISO && log && !log.locked && dateISO === todayISO();
   let html = `<div class="card">
     <div class="section-title">${prog.name}</div>
     <div class="section-meta">${prog.subtitle||""}</div>`;
@@ -1563,10 +1581,8 @@ function renderExercise(ex, dateISO, withLog, met, weightKg, subInfo, reorderInf
         <div class="field"><label>Reps</label><input type="text" inputmode="numeric" class="logReps" value="${escapeHtml(exLog.reps)}" placeholder="reps"></div>
         <button class="check-btn ${checked?"on":""}" data-exid="${ex.id}">✓</button>
       </div>
-      <div class="rpe-label">RPE (difficulté)</div>
-      <div class="rpe-row" data-exid="${ex.id}">
-        ${[1,2,3,4,5,6,7,8,9,10].map(n=>`<button class="rpe-dot ${exLog.rpe===n?"on":""}" data-rpe="${n}" data-exid="${ex.id}"></button>`).join("")}
-      </div>`;
+      <div class="rpe-label">RPE (difficulté) <span class="rpe-value-badge" data-exid="${ex.id}">${exLog.rpe ? exLog.rpe : "—"}</span></div>
+      <input type="range" class="rpe-slider ${exLog.rpe?"touched":""}" min="1" max="10" step="1" value="${exLog.rpe||5}" data-exid="${ex.id}">`;
   }
   const kcalResult = (met && weightKg) ? estimateExerciseKcal(ex, met, weightKg, loggedReps) : null;
   const restText = ex.rest && ex.rest!=="—" ? `Récup : ${escapeHtml(ex.rest)}` : "";
@@ -1644,24 +1660,16 @@ function bindExerciseLogInputs(dateISO){
       if(exLog.done) checkRankUps();
     });
   });
-  document.querySelectorAll(".rpe-row").forEach(row=>{
-    const exId = row.dataset.exid;
-    row.querySelectorAll(".rpe-dot").forEach(dot=>{
-      dot.addEventListener("click", ()=>{
-        const val = Number(dot.dataset.rpe);
-        const exLog = getExLog(dateISO, exId);
-        exLog.rpe = (exLog.rpe===val) ? null : val;
-        saveState();
-        // mise à jour locale des points, sans redessiner toute la page
-        row.querySelectorAll(".rpe-dot").forEach(d=>{
-          const on = Number(d.dataset.rpe) === exLog.rpe;
-          d.classList.toggle("on", on);
-        });
-        if(exLog.rpe === val){
-          dot.classList.remove("pop");
-          requestAnimationFrame(()=> dot.classList.add("pop"));
-        }
-      });
+  document.querySelectorAll(".rpe-slider").forEach(slider=>{
+    slider.addEventListener("input", (e)=>{
+      const exId = slider.dataset.exid;
+      const val = Number(e.target.value);
+      const exLog = getExLog(dateISO, exId);
+      exLog.rpe = val;
+      saveState();
+      slider.classList.add("touched");
+      const badge = document.querySelector(`.rpe-value-badge[data-exid="${exId}"]`);
+      if(badge) badge.textContent = val;
     });
   });
   document.querySelectorAll(".reorder-btn").forEach(btn=>{
@@ -2587,33 +2595,67 @@ function openJournalDetail(dateISO){
     const kcalTotal = estimateSessionKcalDone(log, weightKg);
     html += `<div class="card"><div class="section-meta">${formatKcalText(kcalTotal)} sur cette séance</div></div>`;
   }
-  if(mainProg) html += renderReadOnlyMainProgram(mainProg, log, weightKg);
-  (log.extraPrograms||[]).forEach(key=>{
-    const p = state.programs[key];
-    if(p) html += renderReadOnlyProgram(p.name, p.exercises, log, weightKg, p.met||5);
-  });
 
-  if(log.note){
-    html += `<div class="card"><div class="section-title">Note</div><div class="exo-desc" style="margin-top:6px;">${escapeHtml(log.note)}</div></div>`;
-  }
-  if(state.supplements && state.supplements.length){
-    html += `<div class="card"><div class="section-title" style="margin-bottom:6px;">Compléments</div>`;
-    state.supplements.forEach(sup=>{
-      const supVal = (log.supplements||{})[sup.id];
-      const taken = isSupTaken(supVal);
-      const time = (typeof supVal === "object" && supVal && supVal.time) ? ` à ${escapeHtml(supVal.time)}` : "";
-      html += `<div class="exo"><div class="exo-desc">${taken?"✅":"⬜"} ${escapeHtml(sup.name)} — ${escapeHtml(computeSupplementDoseText(sup, getWeightKg()))}${taken?time:""}</div></div>`;
+  if(log.locked){
+    // ---- Lecture seule ----
+    if(mainProg) html += renderReadOnlyMainProgram(mainProg, log, weightKg);
+    (log.extraPrograms||[]).forEach(key=>{
+      const p = state.programs[key];
+      if(p) html += renderReadOnlyProgram(p.name, p.exercises, log, weightKg, p.met||5);
     });
-    html += `</div>`;
+    if(log.note){
+      html += `<div class="card"><div class="section-title">Note</div><div class="exo-desc" style="margin-top:6px;">${escapeHtml(log.note)}</div></div>`;
+    }
+    if(state.supplements && state.supplements.length){
+      html += `<div class="card"><div class="section-title" style="margin-bottom:6px;">Compléments</div>`;
+      state.supplements.forEach(sup=>{
+        const supVal = (log.supplements||{})[sup.id];
+        const taken = isSupTaken(supVal);
+        const time = (typeof supVal === "object" && supVal && supVal.time) ? ` à ${escapeHtml(supVal.time)}` : "";
+        html += `<div class="exo"><div class="exo-desc">${taken?"✅":"⬜"} ${escapeHtml(sup.name)} — ${escapeHtml(computeSupplementDoseText(sup, getWeightKg()))}${taken?time:""}</div></div>`;
+      });
+      html += `</div>`;
+    }
+    html += `<button class="btn ghost on-dark block" id="editDayBtn" style="margin-top:6px;">✏️ Modifier cette séance</button>`;
+    html += `<button class="btn danger on-dark block" id="deleteDayBtn" style="margin-top:10px;">Supprimer cette séance du carnet</button>`;
+    app.innerHTML = html;
+    document.getElementById("backBtn").addEventListener("click", ()=>render());
+    document.getElementById("editDayBtn").addEventListener("click", ()=>{
+      log.locked = false;
+      saveState();
+      openJournalDetail(dateISO);
+    });
+    armDangerButton(document.getElementById("deleteDayBtn"), "Confirmer la suppression ?", ()=>{
+      delete state.logs[dateISO];
+      saveState();
+      render();
+    });
+  } else {
+    // ---- Édition (poids/reps/RPE/coché, note, compléments) ----
+    html += `<div class="divider-note">Mode modification — les changements sont sauvegardés au fur et à mesure. Tape "Terminer la modification" une fois fini.</div>`;
+    if(mainProg) html += renderProgramCard(mainProg, dateISO, true, log, log.programKey);
+    (log.extraPrograms||[]).forEach(key=>{
+      const p = state.programs[key];
+      if(p) html += renderProgramCard(p, dateISO, true, log, key);
+    });
+    html += `<div class="card">
+      <div class="section-title">Note de séance</div>
+      <textarea id="dayNoteEdit" placeholder="Ressenti général, fatigue, douleurs, motivation...">${escapeHtml(log.note||"")}</textarea>
+    </div>`;
+    if(state.supplements && state.supplements.length){
+      html += renderSupplementsCard(dateISO, log);
+    }
+    html += `<button class="btn accent block" id="finishEditDayBtn" style="margin-top:6px;">✅ Terminer la modification</button>`;
+    app.innerHTML = html;
+    document.getElementById("dayNoteEdit").addEventListener("input", (e)=>{ log.note = e.target.value; });
+    bindExerciseLogInputs(dateISO);
+    bindSupplementsCard(dateISO);
+    document.getElementById("finishEditDayBtn").addEventListener("click", ()=>{
+      log.locked = true;
+      saveState();
+      openJournalDetail(dateISO);
+    });
   }
-  html += `<button class="btn danger on-dark block" id="deleteDayBtn" style="margin-top:6px;">Supprimer cette séance du carnet</button>`;
-  app.innerHTML = html;
-  document.getElementById("backBtn").addEventListener("click", ()=>render());
-  armDangerButton(document.getElementById("deleteDayBtn"), "Confirmer la suppression ?", ()=>{
-    delete state.logs[dateISO];
-    saveState();
-    render();
-  });
 }
 
 // ============================================================
@@ -2862,6 +2904,7 @@ function escapeAttr(str){
   if(str===undefined||str===null) return "";
   return String(str).replace(/&/g,"&amp;").replace(/"/g,"&quot;");
 }
+
 
 </script>
 </body>
