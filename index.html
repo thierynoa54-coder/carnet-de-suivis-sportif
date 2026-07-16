@@ -1739,7 +1739,8 @@ function renderPrograms(app){
   <div style="margin-bottom:4px;">`;
   MAIN_PROGRAM_ORDER.forEach(key=>{
     if(!state.programs[key]) return;
-    html += `<span class="prog-pill ${key===selectedProgramKey?"active":""}" data-key="${key}">${key}</span>`;
+    const label = state.programs[key].pillLabel || key;
+    html += `<span class="prog-pill ${key===selectedProgramKey?"active":""}" data-key="${key}">${escapeHtml(label)}</span>`;
   });
   html += `</div>
 
@@ -1748,7 +1749,8 @@ function renderPrograms(app){
   <div style="margin-bottom:12px;">`;
   SUB_PROGRAM_KEYS.forEach(key=>{
     if(!state.programs[key]) return;
-    html += `<span class="prog-pill sub-prog-pill ${key===selectedProgramKey?"active":""}" data-key="${key}">${escapeHtml(state.programs[key].name.split(" — ")[0].replace("Programme ",""))}</span>`;
+    const label = state.programs[key].pillLabel || state.programs[key].name.split(" — ")[0].replace("Programme ","");
+    html += `<span class="prog-pill sub-prog-pill ${key===selectedProgramKey?"active":""}" data-key="${key}">${escapeHtml(label)}</span>`;
   });
   html += `</div>`;
 
@@ -1828,7 +1830,8 @@ function applyRoundsCount(prog, newCount){
 }
 
 function renderProgramEditForm(prog){
-  let html = `<div class="field-row"><label>Nom du programme</label><input type="text" id="ed_name" value="${escapeAttr(prog.name)}"></div>
+  let html = `<div class="field-row"><label>Nom affiché dans la bulle du menu</label><input type="text" id="ed_pillLabel" value="${escapeAttr(prog.pillLabel||"")}" placeholder="ex : Cardio, Haut du corps..."></div>
+  <div class="field-row"><label>Nom du programme</label><input type="text" id="ed_name" value="${escapeAttr(prog.name)}"></div>
   <div class="field-row"><label>Sous-titre</label><input type="text" id="ed_subtitle" value="${escapeAttr(prog.subtitle||"")}"></div>
   <div class="field-row"><label>Lieu</label><input type="text" id="ed_location" value="${escapeAttr(prog.location||"")}"></div>
   <div class="field-row"><label>Durée</label><input type="text" id="ed_duration" value="${escapeAttr(prog.duration||"")}"></div>
@@ -1932,6 +1935,7 @@ function bindProgramEditForm(prog){
     });
   });
   document.getElementById("saveProgBtn").addEventListener("click", ()=>{
+    prog.pillLabel = document.getElementById("ed_pillLabel").value.trim();
     prog.name = document.getElementById("ed_name").value;
     prog.subtitle = document.getElementById("ed_subtitle").value;
     prog.location = document.getElementById("ed_location").value;
