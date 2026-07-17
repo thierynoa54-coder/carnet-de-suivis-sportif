@@ -794,6 +794,7 @@ function loadState(){
       }
       if(!parsed.supplements) parsed.supplements = JSON.parse(JSON.stringify(SEED_DATA.supplements));
       if(!parsed.weightLog) parsed.weightLog = {};
+      if(!parsed.deletedPrograms) parsed.deletedPrograms = [];
       migrateProgramsData(parsed);
       return parsed;
     }catch(e){ console.warn("Corrupted state, reseeding", e); }
@@ -807,8 +808,17 @@ function loadState(){
     safety: JSON.parse(JSON.stringify(SEED_DATA.safety)),
     supplements: JSON.parse(JSON.stringify(SEED_DATA.supplements)),
     weightLog: {}, // { "YYYY-MM-DD": poidsKg }
+    deletedPrograms: [], // clés de programmes masqués (supprimés par l'utilisateur, restaurables)
     logs: {} // { "YYYY-MM-DD": { programKey, note, locked, extraPrograms:[], substitutions:{}, supplements:{}, exercises:{id:{poids,reps,rpe,done}} } }
   };
+}
+
+// Programmes réellement affichables : présents dans les données ET non supprimés par l'utilisateur
+function getVisibleMainPrograms(){
+  return MAIN_PROGRAM_ORDER.filter(k => state.programs[k] && !(state.deletedPrograms||[]).includes(k));
+}
+function getVisibleSubPrograms(){
+  return SUB_PROGRAM_KEYS.filter(k => state.programs[k] && !(state.deletedPrograms||[]).includes(k));
 }
 
 // Complète les carnets déjà sauvegardés (avant l'ajout des tags muscles/MET/substitutions)
@@ -1280,7 +1290,7 @@ function renderToday(app){
       html += `<button class="btn ghost small remove-extra-btn" data-key="${key}" style="margin:-10px 0 16px;">Retirer « ${escapeHtml(p.name)} » de la séance</button>`;
     });
 
-    const availableExtras = SUB_PROGRAM_KEYS.filter(k => !(log.extraPrograms||[]).includes(k));
+    const availableExtras = getVisibleSubPrograms().filter(k => !(log.extraPrograms||[]).includes(k));
     if(availableExtras.length){
       html += `<div class="card">
         <div class="section-title" style="margin-bottom:8px;">+ Ajouter un programme complémentaire</div>
@@ -1506,7 +1516,7 @@ function updateProgressRing(dateISO){
 
 
 function programOptions(selected){
-  return MAIN_PROGRAM_ORDER.map(key=>{
+  return getVisibleMainPrograms().map(key=>{
     const p = state.programs[key];
     if(!p) return "";
     return `<option value="${key}" ${key===selected?"selected":""}>${p.name}</option>`;
@@ -1737,8 +1747,7 @@ let selectedProgramKey = "A";
 function renderPrograms(app){
   let html = `<div class="eyebrow">Programmes</div>
   <div style="margin-bottom:4px;">`;
-  MAIN_PROGRAM_ORDER.forEach(key=>{
-    if(!state.programs[key]) return;
+  getVisibleMainPrograms().forEach(key=>{
     const label = state.programs[key].pillLabel || key;
     html += `<span class="prog-pill ${key===selectedProgramKey?"active":""}" data-key="${key}">${escapeHtml(label)}</span>`;
   });
@@ -1747,13 +1756,15 @@ function renderPrograms(app){
   <div class="settings-group-label">Sous-programmes complémentaires</div>
   <div class="section-meta" style="margin-bottom:10px;">Ajoutables à une séance via "+ Ajouter un programme complémentaire" sur Aujourd'hui.</div>
   <div style="margin-bottom:12px;">`;
-  SUB_PROGRAM_KEYS.forEach(key=>{
-    if(!state.programs[key]) return;
+  getVisibleSubPrograms().forEach(key=>{
     const label = state.programs[key].pillLabel || state.programs[key].name.split(" — ")[0].replace("Programme ","");
     html += `<span class="prog-pill sub-prog-pill ${key===selectedProgramKey?"active":""}" data-key="${key}">${escapeHtml(label)}</span>`;
   });
   html += `</div>`;
 
+  if(!getVisibleMainPrograms().includes(selectedProgramKey) && !getVisibleSubPrograms().includes(selectedProgramKey)){
+    selectedProgramKey = getVisibleMainPrograms()[0] || getVisibleSubPrograms()[0] || null;
+  }
   const prog = state.programs[selectedProgramKey];
   if(prog){
     html += `<div class="card">
@@ -1803,6 +1814,7 @@ function renderPrograms(app){
   });
   const editBtn = document.getElementById("editToggleBtn");
   if(editBtn) editBtn.addEventListener("click", ()=>{
+    if(editMode) saveProgramEditForm(prog); // "Terminer" doit sauvegarder, pas juste fermer
     editMode = !editMode;
     render();
   });
@@ -1869,7 +1881,9 @@ function renderProgramEditForm(prog){
   });
   html += `</div>
   <button class="btn ghost block" id="addExoBtn" style="margin-top:8px;">+ Ajouter un exercice</button>
-  <button class="btn accent block" id="saveProgBtn" style="margin-top:12px;">Enregistrer les modifications</button>`;
+  <button class="btn accent block" id="saveProgBtn" style="margin-top:12px;">Enregistrer les modifications</button>
+  <div class="settings-subtitle" style="color:var(--danger-dark);">Zone à risque</div>
+  <button class="btn danger block" id="deleteProgBtn">Supprimer ce programme</button>`;
   return html;
 }
 
@@ -1935,25 +1949,39 @@ function bindProgramEditForm(prog){
     });
   });
   document.getElementById("saveProgBtn").addEventListener("click", ()=>{
-    prog.pillLabel = document.getElementById("ed_pillLabel").value.trim();
-    prog.name = document.getElementById("ed_name").value;
-    prog.subtitle = document.getElementById("ed_subtitle").value;
-    prog.location = document.getElementById("ed_location").value;
-    prog.duration = document.getElementById("ed_duration").value;
-    prog.warmup = document.getElementById("ed_warmup").value;
-    prog.note = document.getElementById("ed_note").value;
-    document.querySelectorAll("#editExoList .exo").forEach((row)=>{
-      const idx = Number(row.dataset.exidx);
-      prog.exercises[idx].name = row.querySelector(".edEx_name").value;
-      prog.exercises[idx].desc = row.querySelector(".edEx_desc").value;
-      prog.exercises[idx].sets = row.querySelector(".edEx_sets").value;
-      prog.exercises[idx].rest = row.querySelector(".edEx_rest").value;
-      prog.exercises[idx].video = row.querySelector(".edEx_video").value;
-    });
-    saveState();
+    saveProgramEditForm(prog);
     editMode = false;
     render();
   });
+  armDangerButton(document.getElementById("deleteProgBtn"), "Confirmer la suppression ?", ()=>{
+    if(!state.deletedPrograms) state.deletedPrograms = [];
+    state.deletedPrograms.push(selectedProgramKey);
+    editMode = false;
+    selectedProgramKey = getVisibleMainPrograms()[0] || getVisibleSubPrograms()[0] || null;
+    saveState();
+    render();
+  });
+}
+
+// Lit les valeurs du formulaire d'édition et les applique au programme (utilisée par
+// le bouton "Enregistrer les modifications" ET par "Terminer", pour ne jamais perdre de saisie).
+function saveProgramEditForm(prog){
+  prog.pillLabel = document.getElementById("ed_pillLabel").value.trim();
+  prog.name = document.getElementById("ed_name").value;
+  prog.subtitle = document.getElementById("ed_subtitle").value;
+  prog.location = document.getElementById("ed_location").value;
+  prog.duration = document.getElementById("ed_duration").value;
+  prog.warmup = document.getElementById("ed_warmup").value;
+  prog.note = document.getElementById("ed_note").value;
+  document.querySelectorAll("#editExoList .exo").forEach((row)=>{
+    const idx = Number(row.dataset.exidx);
+    prog.exercises[idx].name = row.querySelector(".edEx_name").value;
+    prog.exercises[idx].desc = row.querySelector(".edEx_desc").value;
+    prog.exercises[idx].sets = row.querySelector(".edEx_sets").value;
+    prog.exercises[idx].rest = row.querySelector(".edEx_rest").value;
+    prog.exercises[idx].video = row.querySelector(".edEx_video").value;
+  });
+  saveState();
 }
 
 // ============================================================
@@ -2735,6 +2763,20 @@ function renderSettings(app){
     </div>
   </div>`;
 
+  // ==================== GROUPE : PROGRAMMES SUPPRIMÉS ====================
+  if((state.deletedPrograms||[]).length){
+    html += `<div class="settings-group-label">Programmes supprimés</div>
+    <div class="card">
+      <div class="section-meta" style="margin-bottom:10px;">Masqués des menus, mais leurs données sont conservées — tu peux les restaurer.</div>
+      ${state.deletedPrograms.map(key=>{
+        const p = state.programs[key];
+        const label = p ? (p.pillLabel || p.name) : key;
+        return `<div class="exo"><div class="exo-head"><div class="exo-name">${escapeHtml(label)}</div>
+          <button class="btn ghost small restore-prog-btn" data-key="${key}">Restaurer</button></div></div>`;
+      }).join("")}
+    </div>`;
+  }
+
   // ==================== GROUPE : DONNÉES ====================
   html += `<div class="settings-group-label">Données</div>
   <div class="card">
@@ -2790,6 +2832,14 @@ function renderSettings(app){
     saveState();
     document.getElementById("savePfBtn").textContent = "✔ Enregistré";
     setTimeout(()=>{ const b=document.getElementById("savePfBtn"); if(b) b.textContent="Enregistrer le profil"; }, 1400);
+  });
+
+  document.querySelectorAll(".restore-prog-btn").forEach(btn=>{
+    btn.addEventListener("click", ()=>{
+      state.deletedPrograms = (state.deletedPrograms||[]).filter(k=>k!==btn.dataset.key);
+      saveState();
+      render();
+    });
   });
 
   document.getElementById("exportBtn").addEventListener("click", async ()=>{
