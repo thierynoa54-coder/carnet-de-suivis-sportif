@@ -1,0 +1,11 @@
+{
+  "name": "carnet-de-suivis-sportif",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "serve": "node tools/serve.js",
+    "lint": "eslint js tests tools",
+    "test": "node --test \"tests/unit/*.test.js\"",
+    "test:e2e": "node --test \"tests/e2e/*.test.js\""
+  }
+}
