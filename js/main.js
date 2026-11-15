@@ -13,13 +13,15 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   });
 
-  // Clavier : les touches 1 à 6 changent d'onglet (hors saisie dans un champ)
+  // Clavier : les touches 1 à 6 changent d'onglet (hors saisie dans un champ).
+  // On lit la touche physique (e.code) : sur un clavier AZERTY, la rangée des chiffres
+  // donne « & é " ' ( - » sans Maj, et le raccourci doit fonctionner quand même.
   document.addEventListener("keydown", (e) => {
     if(e.ctrlKey || e.metaKey || e.altKey) return;
     const el = e.target;
     if(el && (el.isContentEditable || ["INPUT", "TEXTAREA", "SELECT"].includes(el.tagName))) return;
-    const btn = navButtons[Number(e.key) - 1];
-    if(btn) btn.click();
+    const match = /^(?:Digit|Numpad)([1-6])$/.exec(e.code || "");
+    if(match) navButtons[Number(match[1]) - 1].click();
   });
 
   render();

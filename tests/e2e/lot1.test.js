@@ -102,6 +102,9 @@ test("clavier : touches 1 à 6 pour les onglets, Entrée pour enchaîner la sais
   const { ctx, page, errors } = await openApp({ viewport: { width: 1440, height: 900 } });
   await page.keyboard.press("3");
   assert.equal(await page.locator(".navbar button.active").getAttribute("data-view"), "programs");
+  // clavier AZERTY : la touche physique « 4 » produit une apostrophe sans Maj
+  await page.evaluate(() => document.body.dispatchEvent(new KeyboardEvent("keydown", { key: "'", code: "Digit4", bubbles: true })));
+  assert.equal(await page.locator(".navbar button.active").getAttribute("data-view"), "analysis");
   await page.keyboard.press("1");
   assert.equal(await page.locator(".navbar button.active").getAttribute("data-view"), "today");
 
