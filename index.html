@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#7ec8ff">
+<meta name="description" content="Îlot : ta vie devient une île flottante en pixel art. Quêtes du jour, bilan du soir, constellation de la semaine.">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Îlot">
+<title>Îlot</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="preload" href="fonts/pixelify-sans-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div id="sky"></div>
+<div id="game"></div>
+<div id="labels"></div>
+<header id="hud">
+  <div class="px lvl"><span>Niv. <b id="lvl">1</b></span><div class="xpbar" aria-hidden="true"><i id="xpfill"></i></div><span id="xptxt" class="xp-txt">0/100</span></div>
+  <div class="spacer"></div>
+  <div class="px lucioles" title="Lucioles"><img id="luc-ico" alt="Lucioles"><b id="luc">0</b></div>
+  <button class="px iconbtn" id="btn-sound" type="button" aria-label="Couper la musique">♪</button>
+  <button class="px iconbtn" id="btn-menu" type="button" aria-label="Réglages">☰</button>
+</header>
+<nav id="travel" aria-label="Lieux de l'île"></nav>
+<div id="dialog" class="px" hidden role="status" aria-live="polite"><img id="nimbo-face" alt="Nimbo"><div class="body"><div class="txt"></div><div class="choices"></div></div></div>
+<div id="panel" hidden><div class="px sheet" role="dialog" aria-modal="true" aria-labelledby="panel-title"></div></div>
+<div id="toast" aria-live="polite"></div>
+<noscript>Îlot a besoin de JavaScript pour fonctionner.</noscript>
+<script src="vendor/phaser.min.js"></script>
+<script type="module" src="js/main.js"></script>
+</body>
+</html>
