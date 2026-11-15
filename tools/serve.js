@@ -18,7 +18,9 @@ const TYPES = {
 export function startServer({ port = 0, root = process.cwd() } = {}){
   const base = resolve(root);
   const server = createServer(async (req, res) => {
-    const urlPath = decodeURIComponent(new URL(req.url, "http://localhost").pathname);
+    let urlPath;
+    try{ urlPath = decodeURIComponent(new URL(req.url, "http://localhost").pathname); }
+    catch(e){ res.writeHead(400).end("Bad request"); return; }
     const filePath = join(base, normalize(urlPath === "/" ? "/index.html" : urlPath));
     if(!filePath.startsWith(base + sep)){ res.writeHead(403).end(); return; }
     try{
