@@ -8,7 +8,8 @@ import { armDangerButton } from "./programs.js";
 // VUE : RÉGLAGES
 // ============================================================
 export function renderSettings(app){
-  let html = `<div class="eyebrow">Réglages & profil</div>`;
+  // Trois blocs : profil (a), compléments (b), reste (c). Sur PC, (b) occupe la colonne de droite.
+  let html = `<div class="eyebrow">Réglages & profil</div><div class="cols cols-settings"><div class="col col-a">`;
 
   // ==================== GROUPE : PROFIL ====================
   html += `<div class="settings-group-label">Profil</div>
@@ -24,7 +25,7 @@ export function renderSettings(app){
   </div>`;
 
   // ==================== GROUPE : COMPLÉMENTS ====================
-  html += `<div class="settings-group-label">Compléments alimentaires</div>
+  html += `</div><div class="col col-b"><div class="settings-group-label">Compléments alimentaires</div>
   <div class="card">
     <div class="section-meta">Utilisés pour le suivi quotidien dans "Aujourd'hui".</div>
     <div id="supplementsEditList" style="margin-top:10px;">
@@ -57,7 +58,7 @@ export function renderSettings(app){
   </div>`;
 
   // ==================== GROUPE : INTELLIGENCE ARTIFICIELLE ====================
-  html += `<div class="settings-group-label">Intelligence artificielle (optionnel)</div>
+  html += `</div><div class="col col-c"><div class="settings-group-label">Intelligence artificielle (optionnel)</div>
   <div class="card">
     <div class="section-title" style="margin-bottom:2px;">Analyse détaillée (Claude)</div>
     <div class="section-meta">Analyse fine de tes séances/notes dans l'onglet Analyse — payant à l'usage.</div>
@@ -70,8 +71,9 @@ export function renderSettings(app){
   // ==================== GROUPE : APPLICATION ====================
   html += `<div class="settings-group-label">Application</div>
   <div class="card">
-    <div class="section-title" style="margin-bottom:8px;">Ajouter à l'écran d'accueil</div>
+    <div class="section-title" style="margin-bottom:8px;">Installer l'application</div>
     <div class="exo-desc">
+      <strong>PC (Chrome, Edge) :</strong> icône d'installation dans la barre d'adresse, ou menu ⋮ → « Installer Carnet ».<br><br>
       <strong>iPhone (Safari) :</strong> bouton Partager → « Sur l'écran d'accueil ».<br><br>
       <strong>Android (Chrome) :</strong> menu ⋮ → « Ajouter à l'écran d'accueil » ou « Installer l'application ».
     </div>
@@ -104,6 +106,7 @@ export function renderSettings(app){
     <button class="btn danger block" id="resetBtn">Réinitialiser le programme d'origine</button>
     <button class="btn danger block" id="wipeBtn" style="margin-top:10px;">Effacer tout le carnet</button>
   </div>`;
+  html += `</div></div>`;
 
   app.innerHTML = html;
 

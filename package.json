@@ -4,7 +4,7 @@
   "type": "module",
   "scripts": {
     "serve": "node tools/serve.js",
-    "lint": "eslint js tests tools",
+    "lint": "eslint js tests tools sw.js",
     "test": "node --test \"tests/unit/*.test.js\"",
     "test:e2e": "node --test \"tests/e2e/*.test.js\""
   }

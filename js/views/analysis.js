@@ -4,6 +4,7 @@ import { estimateSessionKcalDone, getWeightKg } from "../domain/energy.js";
 import { daysBetweenISO } from "../domain/muscles.js";
 import { render } from "../render.js";
 import { copyForFreeAnalysis, localAiChatHistory, refreshLocalAiChatBox, renderLocalAiChatMessages, runAiAnalysis, sendLocalAiMessage, setLocalAiStatus } from "../ai.js";
+import { COLS_CLOSE, COLS_OPEN, COLS_SPLIT } from "../layout.js";
 
 // ============================================================
 // VUE : ANALYSE (poids, courbe, résumé d'activité, notes)
@@ -19,7 +20,7 @@ export function filterEntriesByRange(entries, days){
   return entries.filter(e => daysBetweenISO(e.dateISO, today) <= days);
 }
 export function buildWeightChartSVG(entries){
-  const width = 320, height = 130, pad = 20;
+  const width = 320, height = 130, pad = 12;
   if(entries.length < 2){
     return `<div class="empty" style="padding:30px 10px;">Ajoute au moins 2 pesées pour voir la courbe.</div>`;
   }
@@ -34,15 +35,17 @@ export function buildWeightChartSVG(entries){
   });
   const pathD = points.map((p,i)=> (i===0?"M":"L") + p.x.toFixed(1) + "," + p.y.toFixed(1)).join(" ");
   const areaD = pathD + ` L${points[points.length-1].x.toFixed(1)},${height-pad} L${points[0].x.toFixed(1)},${height-pad} Z`;
-  let svg = `<svg viewBox="0 0 ${width} ${height}" width="100%" height="${height}" preserveAspectRatio="none">
-    <path d="${areaD}" fill="#EAF0FA" stroke="none"/>
-    <path d="${pathD}" fill="none" stroke="#2E5AAC" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>`;
+  // Le graphique s'étire sur toute la largeur de la carte : vector-effect garde des traits
+  // et des points réguliers quelle que soit la largeur (téléphone ou PC).
+  let svg = `<div class="weight-chart"><div class="chart-label">${maxW.toFixed(1)} kg</div>
+    <svg viewBox="0 0 ${width} ${height}" width="100%" height="${height}" preserveAspectRatio="none" role="img" aria-label="Courbe de poids : de ${points[0].weight.toFixed(1)} à ${points[points.length-1].weight.toFixed(1)} kg">
+    <path d="${areaD}" fill="var(--accent-tint)" stroke="none"/>
+    <path d="${pathD}" fill="none" stroke="var(--accent-ink)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" vector-effect="non-scaling-stroke"/>`;
   points.forEach((p,i)=>{
     const isLast = i===points.length-1;
-    svg += `<circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="${isLast?4:2.2}" fill="${isLast?'#2E5AAC':'#fff'}" stroke="#2E5AAC" stroke-width="1.4"/>`;
+    svg += `<path d="M${p.x.toFixed(1)},${p.y.toFixed(1)} h0" stroke="var(--accent-ink)" stroke-width="${isLast?10:6}" stroke-linecap="round" vector-effect="non-scaling-stroke"/>`;
   });
-  svg += `<text x="${pad}" y="12" font-size="9" fill="#8B93A0" font-family="ui-monospace,monospace">${maxW.toFixed(1)} kg</text>
-    <text x="${pad}" y="${height-6}" font-size="9" fill="#8B93A0" font-family="ui-monospace,monospace">${minW.toFixed(1)} kg</text></svg>`;
+  svg += `</svg><div class="chart-label">${minW.toFixed(1)} kg</div></div>`;
   return svg;
 }
 export function computeActivitySummary(){
@@ -144,6 +147,7 @@ export function renderAnalysis(app){
   const notesInfo = scanRecentNotes(5);
 
   let html = `<div class="eyebrow">Analyse</div>`;
+  html += COLS_OPEN;
 
   // ---- Poids ----
   html += `<div class="card">
@@ -204,6 +208,7 @@ export function renderAnalysis(app){
 
   // ---- Analyse détaillée : gratuite (copier/coller), IA locale expérimentale, ou API (payante) ----
   const gpuSupported = typeof navigator !== "undefined" && "gpu" in navigator;
+  html += COLS_SPLIT;
   html += `<div class="card">
     <div class="section-title" style="margin-bottom:2px;">Analyse détaillée</div>
     <div class="section-meta">Une lecture plus fine de tes séances et notes.</div>
@@ -245,6 +250,7 @@ export function renderAnalysis(app){
     html += `<div class="exo-desc">Aucune note pour l'instant. Écris ce que tu ressens sur "Aujourd'hui" pour les retrouver ici.</div>`;
   }
   html += `</div>`;
+  html += COLS_CLOSE;
 
   app.innerHTML = html;
 

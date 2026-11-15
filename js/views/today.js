@@ -4,6 +4,7 @@ import { escapeAttr, escapeHtml, todayDayName, todayISO } from "../utils.js";
 import { estimateExerciseKcal, estimateSessionKcalDone, getWeightKg } from "../domain/energy.js";
 import { checkRankUps } from "../domain/ranks.js";
 import { render } from "../render.js";
+import { COLS_CLOSE, COLS_OPEN, COLS_SPLIT } from "../layout.js";
 
 // ============================================================
 // VUE : AUJOURD'HUI
@@ -33,6 +34,7 @@ export function renderToday(app){
   const r = 22, circ = 2*Math.PI*r;
   const kcalDone = estimateSessionKcalDone(log, weightKg);
 
+  html += COLS_OPEN;
   html += `<div class="card today">
     <div class="section-title">${planEntry ? planEntry.location+" · "+planEntry.duration : "Séance personnalisée"}</div>
     ${log.locked ? `
@@ -92,6 +94,7 @@ export function renderToday(app){
     }
   }
 
+  html += COLS_SPLIT;
   html += `<div class="card">
     <div class="section-title">Note de séance</div>
     ${log.locked
@@ -104,6 +107,7 @@ export function renderToday(app){
   if(!log.locked){
     html += `<button class="btn accent block" id="saveDayBtn">Enregistrer la séance</button>`;
   }
+  html += COLS_CLOSE;
 
   app.innerHTML = html;
 
@@ -437,6 +441,19 @@ export function bindExerciseLogInputs(dateISO){
     const repsInput = row.querySelector(".logReps");
     const checkBtn = row.querySelector(".check-btn");
     if(!poidsInput || !repsInput || !checkBtn) return; // ligne incomplète, on ignore plutôt que de planter
+    // Saisie au clavier : Entrée passe du poids aux reps, puis valide l'exercice et passe au suivant
+    poidsInput.addEventListener("keydown", (e)=>{
+      if(e.key === "Enter"){ e.preventDefault(); repsInput.focus(); }
+    });
+    repsInput.addEventListener("keydown", (e)=>{
+      if(e.key !== "Enter") return;
+      e.preventDefault();
+      if(!getExLog(dateISO, exId).done) checkBtn.click();
+      const rows = [...document.querySelectorAll(".exo-log[data-exid]")];
+      const nextRow = rows[rows.indexOf(row) + 1];
+      const nextInput = nextRow && nextRow.querySelector(".logPoids");
+      if(nextInput) nextInput.focus();
+    });
     poidsInput.addEventListener("input", (e)=>{
       getExLog(dateISO, exId).poids = e.target.value; saveState();
     });

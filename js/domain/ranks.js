@@ -6,9 +6,9 @@ import { computeMuscleStats } from "./muscles.js";
 // ---------- Paliers de rang façon jeu vidéo (XP cumulé à vie, ne redescend jamais) ----------
 export const RANK_TIERS = [
   { key:"none",     label:"Non classé",  xp:0,    color:"#B9C0CC" },
-  { key:"bronze1",  label:"Bronze I",    xp:15,   color:"#A9713F" },
-  { key:"bronze2",  label:"Bronze II",   xp:45,   color:"#A9713F" },
-  { key:"bronze3",  label:"Bronze III",  xp:90,   color:"#A9713F" },
+  { key:"bronze1",  label:"Bronze I",    xp:15,   color:"#B07845" },
+  { key:"bronze2",  label:"Bronze II",   xp:45,   color:"#B07845" },
+  { key:"bronze3",  label:"Bronze III",  xp:90,   color:"#B07845" },
   { key:"argent1",  label:"Argent I",    xp:150,  color:"#8891A0" },
   { key:"argent2",  label:"Argent II",   xp:225,  color:"#8891A0" },
   { key:"argent3",  label:"Argent III",  xp:315,  color:"#8891A0" },
@@ -16,10 +16,20 @@ export const RANK_TIERS = [
   { key:"or2",      label:"Or II",       xp:540,  color:"#C08B2C" },
   { key:"or3",      label:"Or III",      xp:675,  color:"#C08B2C" },
   { key:"platine",  label:"Platine",     xp:825,  color:"#3E9C8F" },
-  { key:"diamant",  label:"Diamant",     xp:1200, color:"#3E7CD6" },
+  { key:"diamant",  label:"Diamant",     xp:1200, color:"#3A75CC" },
   { key:"champion", label:"Champion",    xp:1800, color:"#2E5AAC" },
   { key:"legende",  label:"Légende",     xp:2700, color:"#8B3EC7" }
 ];
+// Couleur de texte (blanc ou encre) la plus lisible sur une couleur de fond donnée (#RRGGBB).
+export function readableTextOn(hex){
+  const channel = (i) => {
+    const v = parseInt(hex.slice(i, i + 2), 16) / 255;
+    return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4);
+  };
+  const lum = 0.2126 * channel(1) + 0.7152 * channel(3) + 0.0722 * channel(5);
+  const INK_LUM = 0.0103; // #161A20
+  return (1.05 / (lum + 0.05)) >= ((lum + 0.05) / (INK_LUM + 0.05)) ? "#FFFFFF" : "#161A20";
+}
 export function getRankForXP(xp){
   let idx = 0;
   for(let i=0;i<RANK_TIERS.length;i++){ if(xp >= RANK_TIERS[i].xp) idx = i; }
@@ -89,12 +99,12 @@ export function showRankUpCelebration(promotions, levelInfo){
       <div class="rankup-name">Niveau ${levelInfo.level} — ${escapeHtml(levelInfo.title)}</div>`;
   } else {
     const first = promotions[0];
-    inner += `<div class="rankup-badge" style="background:${first.rank.color};">▲</div>
+    inner += `<div class="rankup-badge" style="background:${first.rank.color}; color:${readableTextOn(first.rank.color)};">▲</div>
       <div class="rankup-title">Rang supérieur</div>
       <div class="rankup-name">${escapeHtml(first.label)} — ${escapeHtml(first.rank.label)}</div>`;
   }
   if(promotions.length){
-    inner += `<div class="rankup-list">${promotions.map(p=>`<span style="color:${p.rank.color}; font-weight:700;">${escapeHtml(p.label)}</span> → ${escapeHtml(p.rank.label)}`).join("<br>")}</div>`;
+    inner += `<div class="rankup-list">${promotions.map(p=>`<strong>${escapeHtml(p.label)}</strong> → <span class="rank-pill" style="background:${p.rank.color}; color:${readableTextOn(p.rank.color)};">${escapeHtml(p.rank.label)}</span>`).join("<br>")}</div>`;
   }
   overlay.innerHTML = `<div class="rankup-card">${inner}<div class="rankup-hint">Tape pour continuer</div></div>`;
   document.body.appendChild(overlay);

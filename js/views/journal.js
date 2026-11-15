@@ -4,10 +4,11 @@ import { BODY_SVG, FIST_SVG } from "../assets.js";
 import { escapeHtml, fmtDateHuman } from "../utils.js";
 import { estimateSessionKcalDone, getWeightKg } from "../domain/energy.js";
 import { computeMuscleStats } from "../domain/muscles.js";
-import { getLevelForXP, getRankForXP, getTotalXP } from "../domain/ranks.js";
+import { getLevelForXP, getRankForXP, getTotalXP, readableTextOn } from "../domain/ranks.js";
 import { render } from "../render.js";
 import { bindExerciseLogInputs, bindSupplementsCard, computeSupplementDoseText, formatKcalText, renderProgramCard, renderReadOnlyMainProgram, renderReadOnlyProgram, renderSupplementsCard } from "./today.js";
 import { armDangerButton } from "./programs.js";
+import { COLS_CLOSE, COLS_OPEN, COLS_SPLIT } from "../layout.js";
 
 export function renderMuscleSection(){
   const stats = computeMuscleStats();
@@ -44,7 +45,7 @@ export function renderMuscleSection(){
         return `<div class="muscle-row ${st.neglected?'neglected':''}">
           <div class="muscle-row-top">
             <span class="muscle-name">${MUSCLE_LABELS[m]}</span>
-            <span class="rank-pill" style="background:${rank.color}">${rank.label}</span>
+            <span class="rank-pill" style="background:${rank.color}; color:${readableTextOn(rank.color)};">${rank.label}</span>
             <span class="muscle-last">${lastText}</span>
             ${st.neglected?'<span class="neglect-flag">⚠</span>':'<span class="neglect-flag-spacer"></span>'}
           </div>
@@ -73,12 +74,13 @@ export function bindMuscleSection(){
 export function renderJournal(app){
   const dates = Object.keys(state.logs).sort((a,b)=> b.localeCompare(a));
   const weightKg = getWeightKg();
-  let html = renderMuscleSection();
+  let html = COLS_OPEN + renderMuscleSection() + COLS_SPLIT;
 
   html += `<div class="eyebrow">Historique des séances</div>`;
 
   if(dates.length===0){
     html += `<div class="empty"><div class="empty-ic">${FIST_SVG}</div>Aucune séance enregistrée pour l'instant.<br>Va dans « Aujourd'hui » pour commencer ton carnet.</div>`;
+    html += COLS_CLOSE;
     app.innerHTML = html;
     bindMuscleSection();
     return;
@@ -118,6 +120,7 @@ export function renderJournal(app){
       <button class="btn ghost small" style="margin-top:10px;" data-open="${dateISO}">Voir le détail</button>
     </div>`;
   });
+  html += COLS_CLOSE;
 
   app.innerHTML = html;
   bindMuscleSection();

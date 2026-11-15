@@ -3,6 +3,7 @@ import { escapeAttr, escapeHtml } from "../utils.js";
 import { getWeightKg } from "../domain/energy.js";
 import { render } from "../render.js";
 import { renderExercise } from "./today.js";
+import { COLS_CLOSE, COLS_OPEN, COLS_SPLIT } from "../layout.js";
 
 // VUE : PROGRAMMES (liste + édition complète)
 // ============================================================
@@ -30,6 +31,7 @@ export function renderPrograms(app){
     selectedProgramKey = getVisibleMainPrograms()[0] || getVisibleSubPrograms()[0] || null;
   }
   const prog = state.programs[selectedProgramKey];
+  html += COLS_OPEN;
   if(prog){
     html += `<div class="card">
       <button class="edit-toggle" id="editToggleBtn">${ui.editMode?"Terminer":"Modifier"}</button>
@@ -57,6 +59,7 @@ export function renderPrograms(app){
   }
 
   // Équipement + sécurité générale
+  html += COLS_SPLIT;
   html += `<div class="card"><div class="section-title" style="margin-bottom:8px;">Matériel recommandé</div>`;
   state.equipment.forEach((eq,i)=>{
     html += `<div class="exo"><div class="exo-name">${escapeHtml(eq.name)}</div><div class="exo-desc">${escapeHtml(eq.why)}</div></div>`;
@@ -66,6 +69,7 @@ export function renderPrograms(app){
   html += `<div class="card"><div class="section-title" style="margin-bottom:8px;">Sécurité générale</div>`;
   state.safety.forEach(s=> html += `<div class="exo"><div class="exo-desc">${escapeHtml(s)}</div></div>`);
   html += `</div>`;
+  html += COLS_CLOSE;
 
   app.innerHTML = html;
 

@@ -1,12 +1,13 @@
 import { saveState, state } from "../state.js";
 import { escapeHtml } from "../utils.js";
 import { programOptions } from "./today.js";
+import { COLS_CLOSE, COLS_OPEN, COLS_SPLIT } from "../layout.js";
 
 // VUE : SEMAINE
 // ============================================================
 export function renderWeek(app){
   let html = `<div class="eyebrow">Planning hebdomadaire</div>
-  <div class="card"><div class="section-title" style="margin-bottom:6px;">Modifie l'affectation de chaque jour</div>`;
+  ${COLS_OPEN}<div class="card"><div class="section-title" style="margin-bottom:6px;">Modifie l'affectation de chaque jour</div>`;
   state.weeklyPlan.forEach((entry, idx)=>{
     html += `<div class="week-day">
       <div class="dname">${entry.day}</div>
@@ -19,9 +20,11 @@ export function renderWeek(app){
   });
   html += `</div>`;
 
+  html += COLS_SPLIT;
   html += `<div class="card"><div class="section-title" style="margin-bottom:8px;">Méthode & progression</div>`;
   state.methode.forEach(m=> html += `<div class="exo"><div class="exo-desc">${escapeHtml(m)}</div></div>`);
   html += `</div>`;
+  html += COLS_CLOSE;
 
   app.innerHTML = html;
 

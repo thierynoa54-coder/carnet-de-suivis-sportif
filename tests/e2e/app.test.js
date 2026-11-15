@@ -13,7 +13,7 @@ const ROOT = fileURLToPath(new URL("../..", import.meta.url));
 const FIXTURE = fileURLToPath(new URL("../fixtures/ancienne-sauvegarde.json", import.meta.url));
 const KEY = "carnetCombat_v1";
 const VIEWS = ["today", "week", "programs", "analysis", "journal", "settings"];
-const SCREENS = { "téléphone": { width: 390, height: 844 }, "PC": { width: 1440, height: 900 } };
+const SCREENS = { "téléphone": { width: 390, height: 844 }, "tablette": { width: 820, height: 1180 }, "PC": { width: 1440, height: 900 } };
 
 let server, baseUrl, browser;
 before(async () => {
@@ -26,8 +26,8 @@ after(async () => {
 });
 
 // Ouvre l'application dans un contexte neuf ; `saved` préremplit le stockage comme le ferait une visite précédente.
-async function openApp({ viewport = SCREENS["téléphone"], saved = null } = {}){
-  const ctx = await browser.newContext({ viewport, acceptDownloads: true, locale: "fr-FR" });
+async function openApp({ viewport = SCREENS["téléphone"], saved = null, colorScheme = "light" } = {}){
+  const ctx = await browser.newContext({ viewport, acceptDownloads: true, locale: "fr-FR", colorScheme });
   if(saved){
     await ctx.addInitScript(({ key, value }) => {
       if(!sessionStorage.getItem("__seeded")){ localStorage.setItem(key, value); sessionStorage.setItem("__seeded", "1"); }
